@@ -1,0 +1,10 @@
+namespace: labstream
+resources:
+  - namespace.yaml
+  - configmap.yaml
+  - api.yaml
+  - consumer.yaml
+images:
+  - name: labstream-image
+    newName: public.ecr.aws/docker/library/labstream
+    newTag: latest

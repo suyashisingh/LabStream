@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: labstream-config
+data:
+  POSTGRES_HOST: "postgres.example.amazonaws.com"
+  POSTGRES_PORT: "5432"
+  POSTGRES_DB: "labstream"
+  KAFKA_BOOTSTRAP_SERVERS: "b-1.labstream.kafka.amazonaws.com:9092"
+  KAFKA_RAW_TOPIC: "lab.telemetry.raw"
+  KAFKA_VALIDATED_TOPIC: "lab.telemetry.validated"
+  KAFKA_INVALID_TOPIC: "lab.telemetry.invalid"
+  KAFKA_CONSUMER_GROUP: "labstream-normalizer"

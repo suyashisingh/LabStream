@@ -1,0 +1,33 @@
+name: CI and deploy
+on:
+  push: {branches: [main]}
+  pull_request:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: '3.12'}
+      - run: pip install -r requirements.txt
+      - run: pytest
+      - uses: docker/build-push-action@v6
+        with: {context: ., push: false, tags: labstream:${{ github.sha }}
+  deploy:
+    needs: test
+    if: github.ref == 'refs/heads/main' && secrets.AWS_ROLE_ARN != '' && secrets.ECR_REPOSITORY != ''
+    runs-on: ubuntu-latest
+    permissions: {id-token: write, contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4
+        with: {role-to-assume: ${{ secrets.AWS_ROLE_ARN }}, aws-region: ${{ vars.AWS_REGION }}
+      - id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - uses: docker/build-push-action@v6
+        with: {context: ., push: true, tags: ${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}}
+      - run: |
+          aws eks update-kubeconfig --name "${{ secrets.EKS_CLUSTER_NAME }}" --region "${{ vars.AWS_REGION }}"
+          cd k8s
+          kustomize edit set image labstream-image=${{ steps.login-ecr.outputs.registry }}/${{ secrets.ECR_REPOSITORY }}:${{ github.sha }}
+          kubectl apply -k .
